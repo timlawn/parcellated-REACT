@@ -316,6 +316,11 @@ If you use this toolbox, please cite the original REACT paper:
 
 > Dipasquale, O., Selvaggi, P., Veronese, M., Gabay, A. S., Turkheimer, F., & Mehta, M. A. (2019). Receptor-Enriched Analysis of functional connectivity by targets (REACT): A novel, multimodal analytical approach informed by PET to study the pharmacodynamic response of the brain under MDMA. *NeuroImage*, https://doi.org/10.1016/j.neuroimage.2019.04.007
 
+**For this toolbox implementation:**
+If you use this specific Parcellated REACT toolbox, please cite the software as follows (DOI will resolve to the latest version):
+
+> Lawn, T. (2025). Parcellated REACT (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.17643163
+
 If using Hansen PET data, also cite the main paper alongside the individual original PET map papers:
 
 > Hansen, J. Y., et al. (2022). Mapping neurotransmitter systems to the structural and functional organization of the human neocortex. *Nature Neuroscience*, https://www.nature.com/articles/s41593-022-01186-3
