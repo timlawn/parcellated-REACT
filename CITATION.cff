@@ -3,8 +3,8 @@ message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Lawn"
   given-names: "Timothy"
-  affiliation: "Harvard Medical School / Massachusetts General Hospital"
-  orcid: "https://orcid.org/0000-0000-0000-0000" # Add your ORCID here
+  affiliation: "Harvard Medical School and Massachusetts General Hospital"
+  orcid: "https://orcid.org/my-orcid?orcid=0000-0002-1643-5987"
 title: "Parcellated REACT: A toolbox for receptor-enriched analysis of parcellated fMRI data"
 version: 1.0.0
 date-released: 2025-11-18
