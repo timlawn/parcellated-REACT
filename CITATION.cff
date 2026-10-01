@@ -1,12 +1,43 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use this software, please cite it as below, along with the original REACT paper."
+title: "Parcellated REACT: A toolbox for receptor-enriched analysis of parcellated fMRI data"
 authors:
 - family-names: "Lawn"
   given-names: "Timothy"
-  affiliation: "Harvard Medical School and Massachusetts General Hospital"
-  orcid: "https://orcid.org/my-orcid?orcid=0000-0002-1643-5987"
-title: "Parcellated REACT: A toolbox for receptor-enriched analysis of parcellated fMRI data"
-version: 1.0.0
-date-released: 2025-11-18
+  email: "tim.lawn@psy.ox.ac.uk"
+  affiliation: "Oxford Centre for Integrative Neuroimaging, Department of Experimental Psychology, University of Oxford"
+  orcid: "https://orcid.org/0000-0002-1643-5987"
+version: 2.0.0
+doi: 10.5281/zenodo.17643163
 url: "https://github.com/timlawn/parcellated-REACT"
+repository-code: "https://github.com/timlawn/parcellated-REACT"
 license: MIT
+keywords:
+- REACT
+- fMRI
+- PET
+- receptor
+- functional connectivity
+- parcellation
+references:
+- type: article
+  title: "Receptor-Enriched Analysis of functional connectivity by targets (REACT): A novel, multimodal analytical approach informed by PET to study the pharmacodynamic response of the brain under MDMA"
+  authors:
+  - family-names: "Dipasquale"
+    given-names: "Ottavia"
+  - family-names: "Selvaggi"
+    given-names: "Pierluigi"
+  - family-names: "Veronese"
+    given-names: "Mattia"
+  - family-names: "Gabay"
+    given-names: "Anthony S."
+  - family-names: "Turkheimer"
+    given-names: "Federico"
+  - family-names: "Mehta"
+    given-names: "Mitul A."
+  journal: "NeuroImage"
+  volume: 195
+  start: 252
+  end: 260
+  year: 2019
+  doi: 10.1016/j.neuroimage.2019.04.007

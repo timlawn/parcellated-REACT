@@ -1,347 +1,127 @@
 # Parcellated REACT
 
-A parcellation-based implementation of **REACT** (Receptor-Enriched Analysis of functional Connectivity by Targets) for analyzing fMRI data using PET receptor maps as spatial priors.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17643163.svg)](https://doi.org/10.5281/zenodo.17643163)
 
-## Overview
+REACT (Receptor-Enriched Analysis of functional Connectivity by Targets;
+[Dipasquale et al., 2019](https://doi.org/10.1016/j.neuroimage.2019.04.007))
+for parcellated data: region-wise fMRI timeseries and PET maps in the same
+parcellation.
 
-This toolbox implements the dual regression approach from [Dipasquale et al. (2019)](https://doi.org/10.1016/j.neuroimage.2019.04.007) for parcellated data. 
+The toolbox does not provide PET maps or parcellation code. It assumes you
+supply timeseries and PET maps that are already parcellated with the same atlas,
+in the same region order.
 
-This provides the two main benefits of (1) fitting more seamlessly into parcellated data analysis pipeline and (2) utilising PET data from multiple sources with varying spatial resolutions at a coarser granularity where these differences matter less. 
-
-### Key Features
-
--  **Parcellation-based**: Works with pre-extracted time series from brain atlases
--  **Automatic PET scaling**: Scales PET maps to 0-1 range 
--  **Modular design**: Separate tools for analysis and quality control
--  **Comprehensive QC**: HTML reports with VIF, correlations, and visualizations
-
-## Installation
-
-**Requirements**: Python 3.7 or higher
-
-### Dependencies
-
-**Core analysis** (`react_parcellated.py`):
-```bash
-pip install numpy pandas scikit-learn
-```
-
-**QC reports** (`react_qc_report.py`):
-```bash
-pip install numpy pandas scikit-learn matplotlib seaborn
-```
-
-**Or install all dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-### Setup
-
-Clone or download this repository:
-```bash
-git clone https://github.com/yourusername/parcellated-react.git
-cd parcellated-react
-```
-
-Make scripts executable:
-```bash
-chmod +x react_parcellated.py react_qc_report.py
-```
-
-## Quick Start
-
-### 1. Prepare Your Data
-
-**fMRI data**: CSV/TXT files with rows=timepoints, columns=parcels (one file per subject)
-```
-timepoint1: 0.23, 0.45, 0.12, ...
-timepoint2: 0.34, 0.56, 0.23, ...
-...
-```
-
-**PET data**: Single CSV/TXT file with rows=receptor maps, columns=parcels
-```
-5HT1a:  0.42, 0.38, 0.45, ...
-5HT2a:  0.35, 0.40, 0.33, ...
-DAT:    0.28, 0.31, 0.29, ...
-```
-
-### 2. Run REACT Analysis
-
-Create a text file listing your fMRI files:
-```bash
-# subjects.txt
-/path/to/subject001_fmri.csv
-/path/to/subject002_fmri.csv
-/path/to/subject003_fmri.csv
-```
-
-Run the analysis:
-```bash
-python react_parcellated.py \
-  --fmri_list subjects.txt \
-  --pet_maps receptors.csv \
-  --out_dir ./results \
-  --verbose
-```
-
-### 3. Generate QC Report
+## Install
 
 ```bash
-python react_qc_report.py \
-  --results_dir ./results \
-  --pet_maps receptors.csv \
-  --verbose
+pip install git+https://github.com/timlawn/parcellated-REACT
 ```
 
-Open `./results/react_qc_report.html` in your browser!
+or, from a local copy, `pip install /path/to/parcellated-REACT`. The only
+dependencies are numpy and pandas.
 
-## Detailed Usage
+## Inputs
 
-### react_parcellated.py
+| Input | Format |
+|---|---|
+| Timeseries | One file per scan, rows = timepoints, columns = regions. The scan ID is the filename stem. |
+| PET maps | One file, rows = regions, columns = maps, **header = map names**. An optional `region` column is used as region labels (otherwise regions are numbered 1..N). |
 
-Core REACT analysis tool.
+Files ending in `.tsv` are read as tab-separated; anything else as
+comma-separated.
 
-#### Arguments
+Timeseries files may have a header row. If the first row contains any text,
+it is treated as a header and **ignored**. A header of numeric region labels
+(whole numbers in increasing order) is rejected, because it can't be told
+apart from data; use text labels or no header. Empty cells, `n/a` and `NaN`
+are read as missing values, so the region is excluded for that scan.
 
-- `--fmri_list` (required): Path to text file with fMRI file paths (one per line), OR comma-separated file paths
-- `--pet_maps` (required): Path to PET receptor map file (rows=maps, columns=parcels)
-- `--out_dir` (required): Output directory for results
-- `--pet_names` (optional): Text file with custom PET map names (one per line)
-- `--force`: Overwrite existing outputs
-- `-v, --verbose`: Enable detailed logging
+In the PET table, map names become output filenames, so they must be unique
+(ignoring case). An unnamed index column, as written by pandas `to_csv()`
+without `index=False`, is rejected.
 
-#### Output Structure
+**Regions are matched to PET maps by position only.** The only check is that
+the number of regions is the same. Region labels in a timeseries header are
+not compared with the PET table, so make sure both use the same atlas and the
+same region order.
 
-```
-results/
-├── subject001/
-│   ├── stage1_timeseries.csv      # Receptor-specific time series
-│   ├── all_petmaps.csv            # Combined spatial maps (all receptors)
-│   ├── 5HT1a_map.csv              # Individual receptor map
-│   ├── 5HT2a_map.csv
-│   └── ...
-├── subject002/
-│   └── ...
-└── ...
-```
 
-**File formats:**
-- `stage1_timeseries.csv`: timepoints Ã— receptors
-- `all_petmaps.csv`: receptors Ã— parcels (with receptor names as row indices)
-- `{receptor}_map.csv`: 1 Ã— parcels (spatial map for single receptor)
-
-#### Examples
-
-**Basic usage:**
-```bash
-python react_parcellated.py \
-  --fmri_list subjects.txt \
-  --pet_maps receptors.csv \
-  --out_dir ./results
-```
-
-**With custom PET names:**
-```bash
-# Create receptor_names.txt:
-echo -e "Serotonin_1A\nSerotonin_2A\nDopamine_Transporter" > receptor_names.txt
-
-python react_parcellated.py \
-  --fmri_list subjects.txt \
-  --pet_maps receptors.csv \
-  --pet_names receptor_names.txt \
-  --out_dir ./results
-```
-
-**Using comma-separated file list:**
-```bash
-python react_parcellated.py \
-  --fmri_list "sub1.csv,sub2.csv,sub3.csv" \
-  --pet_maps receptors.csv \
-  --out_dir ./results
-```
-
-### react_qc_report.py
-
-Generate comprehensive quality control report.
-
-#### Arguments
-
-- `--results_dir` (required): Directory with REACT results from `react_parcellated.py`
-- `--pet_maps` (required): Original PET maps file used in analysis
-- `--out_file` (optional): Output HTML filename (default: `react_qc_report.html`)
-- `-v, --verbose`: Enable detailed logging
-
-#### Output Files
-
-```
-results/
-├── react_qc_report.html           # Main HTML report (open in browser!)
-├── summary_statistics.csv         # Per-subject per-receptor statistics
-├── vif_values.csv                 # Variance Inflation Factors
-└── qc_plots/                      # All plots embedded in HTML
-    ├── vif_values.png
-    ├── pet_correlations.png
-    ├── spatial_correlations.png
-    ├── timeseries_correlations.png
-    ├── timeseries.png
-    └── spatial_network_{receptor}.png
-```
-
-#### QC Report Contents
-
-1. **Analysis Overview**: Basic info about subjects, receptors, parcels
-2. **VIF Analysis**: Multicollinearity assessment for PET maps
-3. **Correlation Analyses**: PET maps, spatial maps, and time series
-4. **Time Series Plots**: Receptor-specific time series across subjects
-5. **Spatial Networks**: Mean spatial maps per receptor
-6. **Summary Statistics**: Group-level statistics across subjects
-
-#### Example
+## Usage
 
 ```bash
-python react_qc_report.py \
-  --results_dir ./results \
-  --pet_maps receptors.csv \
-  --verbose
+parcellated-react --timeseries data/sub-*_timeseries.csv --pet pet.csv \
+    --out results/univariate
 ```
 
-## Using Hansen PET Data
+| Options | |
+|---|---|
+| `--timeseries` / `--timeseries-list` | Timeseries files, or a text file listing them |
+| `--pet` | PET maps file |
+| `--mode` | `univariate` (default): an independent model per map. `multivariate`: all maps fitted jointly in both stages. |
+| `--out` | Output directory |
+| `--scale-pet` | Min-max scale each PET map to [0, 1] (default: off) |
+| `--data-norm` | Normalise each region's timeseries to unit SD in stage 2 (default: off; see Method) |
+| `--force` | Overwrite existing outputs (stale map files are removed) |
+| `-q` | Warnings only |
 
-You can use pre-parcellated PET maps from the [Hansen Receptors dataset](https://github.com/netneurolab/hansen_receptors):
+From Python:
 
-**Single receptor analysis:**
-```bash
-# Download a PET map (e.g., Schaefer 400 parcellation)
-wget https://raw.githubusercontent.com/netneurolab/hansen_receptors/main/data/PET_parcellated/scale400/5HT1a_cumi_hc8_beliveau.csv
+```python
+from parcellated_react import run_react
 
-# Use directly in analysis
-python react_parcellated.py \
-  --fmri_list subjects.txt \
-  --pet_maps 5HT1a_cumi_hc8_beliveau.csv \
-  --out_dir ./results
+res = run_react(files, 'pet.csv', out_dir='results/univariate')  # mode='univariate' by default
+res.stage2['5-HT2A']    # DataFrame: regions x scans
+res.stage1['5-HT2A']    # DataFrame: timepoints x scans
+res.info                # same content as react_info.json
 ```
 
-**Multiple receptor analysis:**
-For multiple receptors, download individual files and combine them into a single CSV where each row is a receptor map and each column is a parcel. For example, if you have `5HT1a.csv`, `5HT2a.csv`, and `DAT.csv`, stack them as rows in `receptors.csv`.
+`out_dir` is optional. Omit it to keep the results in memory only. `pet` can
+also be a DataFrame.
 
-**Available parcellations**: scale033, scale060, scale100, scale125, scale200, scale400
+## Outputs
 
-## Methodology
+```
+out/
+├── stage1/<map>.csv   # rows = timepoints, columns = scans
+├── stage2/<map>.csv   # rows = regions,    columns = scans
+└── react_info.json    # version, mode, settings, inputs, excluded regions,
+                       # PET map correlations and VIFs
+```
+
+Read with `pd.read_csv(path, index_col=0)`. If scans differ in length, the
+stage 1 columns of shorter scans are NaN-padded.
+
+# Collinearity 
+
+Collinearity among PET maps can make multivariate estimates unstable. PET map
+correlations and VIFs are logged and saved in `react_info.json`. See 
+https://pmc.ncbi.nlm.nih.gov/articles/PMC13590927/ for further details.
 
 
-### Dual Regression Overview
+## Citations
 
-REACT uses a two-stage dual regression approach:
+If you use this toolbox, please cite it alongside the original REACT paper:
 
-![REACT Stages](https://timlawn.github.io/images/react-stages.png)
+Lawn, T. Parcellated REACT: A toolbox for receptor-enriched analysis of
+parcellated fMRI data. Zenodo. https://doi.org/10.5281/zenodo.17643163
 
-**Stage 1**: PET maps as spatial regressors
-- Input: PET maps (receptors × parcels) and fMRI data (timepoints × parcels)
-- Output: Receptor-specific time series (timepoints × receptors)
-- For each timepoint, regress BOLD activity across parcels against PET receptor densities
+Dipasquale, O., et al. (2019). Receptor-Enriched Analysis of functional
+connectivity by targets (REACT). *NeuroImage*.
+https://doi.org/10.1016/j.neuroimage.2019.04.007
 
-**Stage 2**: Time series as temporal regressors
-- Input: Stage 1 time series and fMRI data
-- Output: Receptor-enriched spatial maps (receptors × parcels)
-- For each parcel, regress BOLD time series against receptor-specific time series
+Lawn, T., et al. (2023). From neurotransmitters to networks: Transcending
+organizational hierarchies with molecular-informed functional imaging.
+*Neuroscience and Biobehavioral Reviews*. https://pubmed.ncbi.nlm.nih.gov/37086932/
 
-### Preprocessing
-
-1. **PET scaling**: All PET maps scaled to [0,1] range
-2. **Centering**: Both stages demean data (standard dual regression)
-3. **Normalization**: Stage 2 normalizes design matrix to unit variance
-
-### Interpretation
-
-The output spatial maps represent how strongly each parcel's activity relates to the receptor-enriched time series. Positive values indicate positive coupling, negative values indicate anti-correlation. For more details see this [blog post](https://timlawn.github.io/posts/2025/01/react-guide/) and [review paper](https://pubmed.ncbi.nlm.nih.gov/37086932/).
-
-## Variance Inflation Factor (VIF)
-
-VIF measures multicollinearity between PET maps. High collinearity can affect REACT results.
-
-**Interpreting VIF:**
-- **VIF < 5**: Low multicollinearity (good)
-- **VIF 5-10**: Moderate multicollinearity (problematic)
-- **VIF > 10**: High multicollinearity (abort!)
-
-**What to do if VIF is high:**
-- Consider using fewer, less correlated PET maps
-- Use PCA to create orthogonal components (at risk of making interpretation even more complex...)
-
-## Tips and Best Practices
-
-### Data Preparation
-
-1. **Parcellation consistency**: Ensure fMRI and PET use the same parcellation
-2. **Check for NaNs/zeros**: Script validates but good to check beforehand
-4. **Multiple runs**: Consider averaging resulting networks across runs
-
-### PET Maps
-
-1. **Source quality**: Use high quality group average receptor maps 
-2. **Number of maps**: Start with fewer maps; more maps = more multicollinearity
-3. **Biological relevance**: Choose receptors relevant to your hypothesis (REACT is not well suited to purely data driven analyses)
-
-### Downstream Analyses
-
-The output spatial maps can be used for:
-- Group comparisons (patients vs. controls)
-- Drug effects (pre/post administration)
-- Correlation with behavioral/clinical measures
-- Prediction modeling or classification
-- Endless other applications!
-  
-## Troubleshooting
-
-### "Dimension mismatch" error
-- Check that fMRI and PET have same number of parcels
-- Verify data orientation (rows=timepoints for fMRI, rows=receptors for PET)
-
-### "All-zero parcels" error
-- Some parcels may be outside brain or have no data
-- Deal with these before analysis
-
-### High VIF values
-- Consider using subset of less-correlated PET maps
-- Try PCA on PET maps to create orthogonal components
-
-### NaN in outputs
-- Check input data for NaNs
-
-## Citation
-
-If you use this toolbox, please cite the original REACT paper:
-
-> Dipasquale, O., Selvaggi, P., Veronese, M., Gabay, A. S., Turkheimer, F., & Mehta, M. A. (2019). Receptor-Enriched Analysis of functional connectivity by targets (REACT): A novel, multimodal analytical approach informed by PET to study the pharmacodynamic response of the brain under MDMA. *NeuroImage*, https://doi.org/10.1016/j.neuroimage.2019.04.007
-
-**For this toolbox implementation:**
-If you use this specific Parcellated REACT toolbox, please cite the software as follows (DOI will resolve to the latest version):
-
-> Lawn, T. (2025). Parcellated REACT (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.17643163
-
-If using Hansen PET data, also cite the main paper alongside the individual original PET map papers:
-
-> Hansen, J. Y., et al. (2022). Mapping neurotransmitter systems to the structural and functional organization of the human neocortex. *Nature Neuroscience*, https://www.nature.com/articles/s41593-022-01186-3
-
-For more information about these sorts of analyses, including their applications, limitations, and interpretation: 
-
-> Lawn, T., et al. (2023). From neurotransmitters to networks: Transcending organizational hierarchies with molecular-informed functional imaging. *Neuroscience and Biobehavioral Reviews*, https://pubmed.ncbi.nlm.nih.gov/37086932/
-
-## Contributing
-
-Contributions welcome! Please open an issue or submit a pull request.
-
-## License
-
-This project is licensed under the terms of the [MIT License](LICENSE).
+Lawn, T., et al. (2023). Spatial Collinearity Constrains Multivariate Molecular‐Enriched
+Network Estimation. *Human Brain Mapping*. https://pmc.ncbi.nlm.nih.gov/articles/PMC13590927/
 
 ## Contact
 
-tlawn1@mgh.harvard.edu
+Questions and bug reports: please open an
+[issue](https://github.com/timlawn/parcellated-REACT/issues), or email Tim Lawn
+(tim.lawn@psy.ox.ac.uk).
 
-## Acknowledgments
+## License
 
-- Original REACT toolbox: https://github.com/ottaviadipasquale/react-fmri
-- Hansen receptor data: https://github.com/netneurolab/hansen_receptors
+MIT

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parcellated-react"
+dynamic = ["version"]
+description = "REACT (Receptor-Enriched Analysis of functional Connectivity by Targets) for parcellated fMRI and PET data"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Tim Lawn", email = "tim.lawn@psy.ox.ac.uk"}]
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.20", "pandas>=1.3"]
+
+[project.scripts]
+parcellated-react = "parcellated_react.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "parcellated_react.__version__"}
